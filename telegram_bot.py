@@ -5,6 +5,8 @@ from psycopg2 import connect
 
 # Load environment variable
 DATABASE_URL = os.getenv("DATABASE_URL")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL")  # Render's external URL
 
 # Connect to the database
 conn = connect(DATABASE_URL)
@@ -22,12 +24,11 @@ conn.commit()
 
 # Function to validate mint address
 def validate_mint_address(mint_address: str) -> bool:
-    return len(mint_address) == 44 and mint_address.endswith("pump")
+    return mint_address.endswith("pump")
 
 # Function to save or update the mint address in the database
 def save_mint_address(address: str):
     try:
-        # Insert the address or increment the sent_count
         cur.execute("""
         INSERT INTO mint_addresses (address)
         VALUES (%s)
@@ -62,21 +63,25 @@ async def process_address(update: Update, context) -> None:
     if validate_mint_address(mint_address):
         save_mint_address(mint_address)  # Save to DB or increment count
         count = get_address_count(mint_address)  # Fetch the updated count
-        await update.message.reply_text(f"Valid mint address! It has been sent to this bot {count} times.")
+        await update.message.reply_text(f"Valid mint address! This CA reported {count} times.")
     else:
         await update.message.reply_text("Invalid mint address. Ensure it is 44 characters long and ends with 'pump'.")
 
 # Main function
 def main():
-    # Replace 'YOUR_TOKEN_HERE' with your bot's token
-    application = Application.builder().token("8170738721:AAHXFA2z0nctgDG0bkFSudAWv2CoZ75CzKQ").build()
+    application = Application.builder().token(BOT_TOKEN).build()
 
     # Add handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, process_address))
 
-    # Start the Bot
-    application.run_polling()
+    # Webhook setup
+    application.run_webhook(
+        listen="0.0.0.0",
+        port=int(os.environ.get("PORT", 8443)),
+        url_path=BOT_TOKEN,
+        webhook_url=f"{RENDER_EXTERNAL_URL}/{BOT_TOKEN}"
+    )
 
 if __name__ == '__main__':
     main()
