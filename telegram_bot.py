@@ -2,15 +2,24 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 import os
 from psycopg2 import connect
-
-# Load environment variable
+import time
 DATABASE_URL = os.getenv("DATABASE_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL")  # Render's external URL
 
-# Connect to the database
-conn = connect(DATABASE_URL)
-cur = conn.cursor()
+for i in range(5):  # Retry 5 times
+    try:
+        conn = connect(DATABASE_URL)
+        cur = conn.cursor()
+        break
+    except Exception as e:
+        print(f"Database connection failed: {e}. Retrying {i + 1}/5...")
+        time.sleep(5)  # Wait 5 seconds before retrying
+else:
+    raise Exception("Database connection failed after 5 attempts")
+# Load environment variable
+
+
 
 # Create table if it doesn't exist
 cur.execute("""
@@ -63,7 +72,7 @@ async def process_address(update: Update, context) -> None:
     if validate_mint_address(mint_address):
         save_mint_address(mint_address)  # Save to DB or increment count
         count = get_address_count(mint_address)  # Fetch the updated count
-        await update.message.reply_text(f"Valid mint address! This CA reported {count} times.")
+        await update.message.reply_text(f"This CA reported {count} times.")
     else:
         await update.message.reply_text("Invalid mint address. Ensure it is 44 characters long and ends with 'pump'.")
 
