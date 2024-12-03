@@ -68,7 +68,7 @@ async def start(update: Update, context) -> None:
         "➡️ You can help train Pazyryk by snitching old rugs 👨‍🏫.\n\n"
         "➡️ The more rug Pazyryk learns, the more accurate it gets 🚀.\n\n"
         "✅ Pazyryk [(X)](https://x.com/Pazyrykfirstrug)\n\n"
-        "✅ Visit Pazyryk's [website](https://www.pullrug.com/)\n\n"
+        "✅ Visit Pazyryk's [website] for more details (https://www.pullrug.com/)\n\n"
         "🚨 Write rug CA to snitch 🚨"
     )
     await update.message.reply_text(
