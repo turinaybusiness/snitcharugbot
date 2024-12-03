@@ -58,20 +58,23 @@ def get_address_count(address: str) -> int:
 async def start(update: Update, context) -> None:
     # Create buttons
     keyboard = [
-        [InlineKeyboardButton("Pazyryk X", url="https://x.com/Pazyrykfirstrug")],
-        [InlineKeyboardButton("Visit Pazyryk's website for more details", url="https://www.pullrug.com/")],
-        [InlineKeyboardButton("Report CA", callback_data="report_ca")],
-        [InlineKeyboardButton("Snitch CA", callback_data="check_ca")],
+        [InlineKeyboardButton("Snitch CA", callback_data="report_ca")],
+        [InlineKeyboardButton("Check CA", callback_data="check_ca")],
         [InlineKeyboardButton("Current Training Process", callback_data="training_progress")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await update.message.reply_text(
-       "➡️ Welcome to Pazyryk rug snitch bot🤖\n\n"
+    message = (
+        "➡️ Welcome to Pazyryk rug snitch bot 🤖\n\n"
         "➡️ You can help train Pazyryk by snitching old rugs 👨‍🏫.\n\n"
-        "➡️ The more rug Pazyryk learn, the more accuracy it gets 🚀.\n\n"
-        "🚨 Write rug CA to snitch 🚨",
+        "➡️ The more rug Pazyryk learns, the more accurate it gets 🚀.\n\n"
+        "✅ Pazyryk [(X)](https://x.com/Pazyrykfirstrug)\n\n"
+        "✅ Visit Pazyryk's [website](https://www.pullrug.com/)\n\n"
+        "🚨 Write rug CA to snitch 🚨"
+    )
+    await update.message.reply_text(
+        message,
         reply_markup=reply_markup,
+        parse_mode="Markdown",  # Use Markdown for clickable links
     )
 
 # CallbackQueryHandler to process button clicks
