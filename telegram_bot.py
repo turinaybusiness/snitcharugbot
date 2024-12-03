@@ -70,7 +70,7 @@ async def start(update: Update, context) -> None:
        "➡️ Welcome to Pazyryk rug snitch bot🤖\n\n"
         "➡️ You can help train Pazyryk by snitching old rugs 👨‍🏫.\n"
         "➡️ The more rug Pazyryk learn, the more accuracy it gets 🚀.\n\n"
-        "🚨Wirte rug CA to snitch🚨",
+        "🚨 Write rug CA to snitch 🚨",
         reply_markup=reply_markup,
     )
 
@@ -81,13 +81,13 @@ async def button_handler(update: Update, context) -> None:
 
     # Handle each button action
     if query.data == "report_ca":
-        await query.edit_message_text("Enter Token CA:")
+        await update.callback_query.message.reply_text("Enter Token CA:")
         context.user_data["awaiting_ca"] = "report"
     elif query.data == "check_ca":
-        await query.edit_message_text("Enter Token CA to check:")
+        await update.callback_query.message.reply_text("Enter Token CA to check:")
         context.user_data["awaiting_ca"] = "check"
     elif query.data == "training_progress":
-        await query.edit_message_text("Training Process: 25% 🛠")
+        await update.callback_query.message.reply_text("Training Process: 25% 🛠")
 
 # Message handler to handle user input after button clicks
 async def handle_ca_input(update: Update, context) -> None:
