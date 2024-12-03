@@ -10,15 +10,40 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 conn = connect(DATABASE_URL)
 cur = conn.cursor()
 
-# Example query
-cur.execute("SELECT 1")
-print(cur.fetchone())
-# Initialize storage
-valid_mint_addresses = []
+# Create table if it doesn't exist
+cur.execute("""
+CREATE TABLE IF NOT EXISTS mint_addresses (
+    id SERIAL PRIMARY KEY,
+    address TEXT NOT NULL UNIQUE,
+    sent_count INTEGER NOT NULL DEFAULT 1
+);
+""")
+conn.commit()
 
 # Function to validate mint address
 def validate_mint_address(mint_address: str) -> bool:
     return len(mint_address) == 44 and mint_address.endswith("pump")
+
+# Function to save or update the mint address in the database
+def save_mint_address(address: str):
+    try:
+        # Insert the address or increment the sent_count
+        cur.execute("""
+        INSERT INTO mint_addresses (address)
+        VALUES (%s)
+        ON CONFLICT (address)
+        DO UPDATE SET sent_count = mint_addresses.sent_count + 1;
+        """, (address,))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        print(f"Error saving address: {e}")
+
+# Function to get the sent_count for a mint address
+def get_address_count(address: str) -> int:
+    cur.execute("SELECT sent_count FROM mint_addresses WHERE address = %s", (address,))
+    result = cur.fetchone()
+    return result[0] if result else 0
 
 # Start command handler
 async def start(update: Update, context) -> None:
@@ -35,8 +60,9 @@ async def process_address(update: Update, context) -> None:
     mint_address = update.message.text.strip()
     
     if validate_mint_address(mint_address):
-        valid_mint_addresses.append(mint_address)
-        await update.message.reply_text("Valid mint address! It has been saved.")
+        save_mint_address(mint_address)  # Save to DB or increment count
+        count = get_address_count(mint_address)  # Fetch the updated count
+        await update.message.reply_text(f"Valid mint address! It has been sent to this bot {count} times.")
     else:
         await update.message.reply_text("Invalid mint address. Ensure it is 44 characters long and ends with 'pump'.")
 
