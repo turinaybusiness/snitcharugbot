@@ -10,7 +10,13 @@ def validate_mint_address(mint_address: str) -> bool:
 
 # Start command handler
 async def start(update: Update, context) -> None:
-    await update.message.reply_text("Welcome! Please send me your mint address.")
+    await update.message.reply_text(
+        "🤖 Welcome to the Pazyryk Rug Snitch Bot! 🤖\n\n"
+        "➡️ Help train Pazyryk by reporting old rugs 🧵.\n"
+        "➡️ The more rugs Pazyryk learns about, the more accurate it becomes 🚀.\n\n"
+        "✅ Visit Pazyryk's website for more details.\n\n"
+        "🚨 Enter the rug's CA (Contract Address) to report it! 🚨"
+    )
 
 # Message handler to process mint addresses
 async def process_address(update: Update, context) -> None:
