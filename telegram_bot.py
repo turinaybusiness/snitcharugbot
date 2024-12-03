@@ -1,25 +1,24 @@
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters
 import os
 from psycopg2 import connect
 import time
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL")  # Render's external URL
+RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL")
 
-for i in range(5):  # Retry 5 times
+# Retry database connection
+for i in range(5):
     try:
         conn = connect(DATABASE_URL)
         cur = conn.cursor()
         break
     except Exception as e:
         print(f"Database connection failed: {e}. Retrying {i + 1}/5...")
-        time.sleep(5)  # Wait 5 seconds before retrying
+        time.sleep(5)
 else:
     raise Exception("Database connection failed after 5 attempts")
-# Load environment variable
-
-
 
 # Create table if it doesn't exist
 cur.execute("""
@@ -33,7 +32,7 @@ conn.commit()
 
 # Function to validate mint address
 def validate_mint_address(mint_address: str) -> bool:
-    return mint_address.endswith("pump")
+    return len(mint_address) == 44 and mint_address.endswith("pump")
 
 # Function to save or update the mint address in the database
 def save_mint_address(address: str):
@@ -57,24 +56,60 @@ def get_address_count(address: str) -> int:
 
 # Start command handler
 async def start(update: Update, context) -> None:
+    # Create buttons
+    keyboard = [
+        [InlineKeyboardButton("Pazyryk X", url="https://x.com/Pazyrykfirstrug")],
+        [InlineKeyboardButton("Visit Pazyryk's website for more details", url="https://www.pullrug.com/")],
+        [InlineKeyboardButton("Report CA", callback_data="report_ca")],
+        [InlineKeyboardButton("Snitch CA", callback_data="check_ca")],
+        [InlineKeyboardButton("Current Training Process", callback_data="training_progress")],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
     await update.message.reply_text(
-        "🤖 Welcome to the Pazyryk Rug Snitch Bot! 🤖\n\n"
-        "➡️ Help train Pazyryk by reporting old rugs 🧵.\n"
-        "➡️ The more rugs Pazyryk learns about, the more accurate it becomes 🚀.\n\n"
-        "✅ Visit Pazyryk's website for more details.\n\n"
-        "🚨 Enter the rug's CA (Contract Address) to report it! 🚨"
+       "➡️ Welcome to Pazyryk rug snitch bot🤖\n\n"
+        "➡️ You can help train Pazyryk by snitching old rugs 👨‍🏫.\n"
+        "➡️ The more rug Pazyryk learn, the more accuracy it gets 🚀.\n\n"
+        "🚨Wirte rug CA to snitch🚨",
+        reply_markup=reply_markup,
     )
 
-# Message handler to process mint addresses
-async def process_address(update: Update, context) -> None:
+# CallbackQueryHandler to process button clicks
+async def button_handler(update: Update, context) -> None:
+    query = update.callback_query
+    await query.answer()
+
+    # Handle each button action
+    if query.data == "report_ca":
+        await query.edit_message_text("Enter Token CA:")
+        context.user_data["awaiting_ca"] = "report"
+    elif query.data == "check_ca":
+        await query.edit_message_text("Enter Token CA to check:")
+        context.user_data["awaiting_ca"] = "check"
+    elif query.data == "training_progress":
+        await query.edit_message_text("Training Process: 25% 🛠")
+
+# Message handler to handle user input after button clicks
+async def handle_ca_input(update: Update, context) -> None:
     mint_address = update.message.text.strip()
-    
-    if validate_mint_address(mint_address):
-        save_mint_address(mint_address)  # Save to DB or increment count
-        count = get_address_count(mint_address)  # Fetch the updated count
-        await update.message.reply_text(f"This CA reported {count} times.")
+    action = context.user_data.get("awaiting_ca")
+
+    if action == "report":
+        if validate_mint_address(mint_address):
+            save_mint_address(mint_address)
+            await update.message.reply_text("Thank you for your report 🙏")
+        else:
+            await update.message.reply_text("Invalid Token Address.")
+        context.user_data["awaiting_ca"] = None  # Clear the action
+    elif action == "check":
+        if validate_mint_address(mint_address):
+            count = get_address_count(mint_address)
+            await update.message.reply_text(f"This CA reported {count} times 🚨")
+        else:
+            await update.message.reply_text("Invalid Token Address.")
+        context.user_data["awaiting_ca"] = None  # Clear the action
     else:
-        await update.message.reply_text("Invalid mint address. Ensure it is 44 characters long and ends with 'pump'.")
+        await update.message.reply_text("Please use one of the buttons to interact with the bot.")
 
 # Main function
 def main():
@@ -82,7 +117,8 @@ def main():
 
     # Add handlers
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, process_address))
+    application.add_handler(CallbackQueryHandler(button_handler))  # For button clicks
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ca_input))  # For text input
 
     # Webhook setup
     application.run_webhook(
