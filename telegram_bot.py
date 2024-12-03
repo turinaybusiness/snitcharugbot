@@ -68,7 +68,7 @@ async def start(update: Update, context) -> None:
 
     await update.message.reply_text(
        "➡️ Welcome to Pazyryk rug snitch bot🤖\n\n"
-        "➡️ You can help train Pazyryk by snitching old rugs 👨‍🏫.\n"
+        "➡️ You can help train Pazyryk by snitching old rugs 👨‍🏫.\n\n"
         "➡️ The more rug Pazyryk learn, the more accuracy it gets 🚀.\n\n"
         "🚨 Write rug CA to snitch 🚨",
         reply_markup=reply_markup,
