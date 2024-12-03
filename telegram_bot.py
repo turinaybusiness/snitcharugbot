@@ -1,6 +1,18 @@
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
+import os
+from psycopg2 import connect
 
+# Load environment variable
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+# Connect to the database
+conn = connect(DATABASE_URL)
+cur = conn.cursor()
+
+# Example query
+cur.execute("SELECT 1")
+print(cur.fetchone())
 # Initialize storage
 valid_mint_addresses = []
 
