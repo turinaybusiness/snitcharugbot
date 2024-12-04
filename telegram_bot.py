@@ -90,7 +90,7 @@ async def button_handler(update: Update, context) -> None:
         await update.callback_query.message.reply_text("Enter Token CA to check:")
         context.user_data["awaiting_ca"] = "check"
     elif query.data == "training_progress":
-        await update.callback_query.message.reply_text("Training Process: 25% 🛠")
+        await update.callback_query.message.reply_text("Training Process: 34% 🛠")
 
 # Message handler to handle user input after button clicks
 async def handle_ca_input(update: Update, context) -> None:
