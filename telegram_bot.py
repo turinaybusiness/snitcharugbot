@@ -8,7 +8,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL")
 
-# Retry database connection
+
 for i in range(5):
     try:
         conn = connect(DATABASE_URL)
