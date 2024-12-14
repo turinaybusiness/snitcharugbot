@@ -324,9 +324,16 @@ def analyze():
         }), 500
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def telegram_webhook():
-    update = Update.de_json(request.get_json(force=True), context.bot)
-    application.dispatcher.process_update(update)
-    return "OK", 200
+    try:
+        update = request.get_json(force=True)
+        logging.debug(f"Received update: {update}")
+        update = Update.de_json(update, application.bot)
+        application.process_update(update)
+        return "OK", 200
+    except Exception as e:
+        logging.error(f"Error processing update: {e}")
+        return "Internal Server Error", 500
+
 if __name__ == '__main__':
     main()
     port = int(os.getenv('PORT', 5000))  # Render provides the PORT env variable
