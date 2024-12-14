@@ -310,30 +310,30 @@ def analyze():
             "status": "error"
         }), 500
 application = Application.builder().token(BOT_TOKEN).build()
-# @app.route(f"/{BOT_TOKEN}", methods=["POST"])
-# def telegram_webhook():
-#     try:
-#         # Log incoming request headers and body
-#         logging.debug(f"Webhook received headers: {request.headers}")
-#         logging.debug(f"Webhook received body: {request.data}")
+@app.route(f"/{BOT_TOKEN}", methods=["POST"])
+def telegram_webhook():
+    try:
+        # Log incoming request headers and body
+        logging.debug(f"Webhook received headers: {request.headers}")
+        logging.debug(f"Webhook received body: {request.data}")
 
-#         # Parse the incoming update
-#         update_data = request.get_json(force=True)
-#         logging.debug(f"Webhook parsed update data: {update_data}")
+        # Parse the incoming update
+        update_data = request.get_json(force=True)
+        logging.debug(f"Webhook parsed update data: {update_data}")
 
-#         # Convert the update data to a Telegram Update object
-#         update = Update.de_json(update_data, application.bot)
-#         logging.debug(f"Telegram Update object created: {update}")
+        # Convert the update data to a Telegram Update object
+        update = Update.de_json(update_data, application.bot)
+        logging.debug(f"Telegram Update object created: {update}")
 
-#         # Process the update using the bot's handlers
-#         application.process_update(update)
-#         logging.debug("Update processed successfully by Telegram bot")
+        # Process the update using the bot's handlers
+        application.process_update(update)
+        logging.debug("Update processed successfully by Telegram bot")
 
-#         return "OK", 200
-#     except Exception as e:
-#         # Log the error with traceback
-#         logging.error(f"Error processing webhook update: {e}", exc_info=True)
-#         return jsonify({"error": "Internal Server Error"}), 500
+        return "OK", 200
+    except Exception as e:
+        # Log the error with traceback
+        logging.error(f"Error processing webhook update: {e}", exc_info=True)
+        return jsonify({"error": "Internal Server Error"}), 500
 
 
 def run_flask():
@@ -356,15 +356,16 @@ def run_telegram_bot():
 
 def main():
     # Run Flask and Telegram bot in separate threads
-    flask_thread = Thread(target=run_flask)
-    flask_thread.start()
+    # flask_thread = Thread(target=run_flask)
+    # flask_thread.start()
 
-    telegram_thread = Thread(target=run_telegram_bot)
-    telegram_thread.start()
+    # telegram_thread = Thread(target=run_telegram_bot)
+    # telegram_thread.start()
 
-    # Wait for both threads to finish
-    flask_thread.join()
-    telegram_thread.join()
+    # # Wait for both threads to finish
+    # flask_thread.join()
+    # telegram_thread.join()
+    run_telegram_bot()
 
 if __name__ == '__main__':
     main()
