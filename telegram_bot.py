@@ -51,13 +51,19 @@ def save_mint_address(address: str):
 def fetch_risk_analysis(token_address: str):
     api_url = f"https://snitcharugbot-1.onrender.com/analyze?token={token_address}"
     try:
+        print(f"Fetching risk analysis for: {token_address}")  # Log the token address
         response = requests.get(api_url, headers={"Content-Type": "application/json"})
         response.raise_for_status()
         data = response.json()
-        if data["status"] == "success":
-            return data["data"]["risk_level"], data["data"]["risk_score"], data["data"]["risk_factors"]
+        print(f"API Response: {data}")  # Log the API response
+        if data.get("status") == "success":
+            return data["data"]["risk_level"], data["data"]["risk_score"], data["data"].get("risk_factors", [])
+        else:
+            print(f"API Error: {data.get('error', 'Unknown error')}")
+    except requests.exceptions.RequestException as e:
+        print(f"Network Error: {e}")  # Log network errors
     except Exception as e:
-        print(f"Error fetching risk analysis: {e}")
+        print(f"Unexpected Error: {e}")  # Log unexpected errors
     return None, None, None
 
 # Function to get the sent_count for a mint address
@@ -127,19 +133,20 @@ async def handle_ca_input(update: Update, context) -> None:
         else:
             await update.message.reply_text("Invalid Token Address.")
         context.user_data["awaiting_ca"] = None  # Clear the action
-    elif action == "rug_pull":
+    if action == "rug_pull":
         if validate_mint_address(mint_address):
             risk_level, risk_score, risk_factors = fetch_risk_analysis(mint_address)
             if risk_level and risk_score is not None:
                 await update.message.reply_text(
-                    f"Risk Level: {risk_level}\n"
-                    f"Risk Score: {risk_score:.2f}\n"
+                    f"Risk Analysis for Token: {mint_address}\n\n"
+                    f"🔹 Risk Level: {risk_level}\n"
+                    f"🔹 Risk Score: {risk_score:.2f}\n"
                 )
             else:
-                await update.message.reply_text("Failed to fetch risk analysis. Please try again later.")
+                await update.message.reply_text("❌ Failed to fetch risk analysis. Please try again later.")
         else:
-            await update.message.reply_text("Invalid Token Address.")
-        context.user_data["awaiting_ca"] = None
+            await update.message.reply_text("❌ Invalid Token Address. Please try again.")
+        context.user_data["awaiting_ca"] = None  # Clear the action
     else:
         await update.message.reply_text("Please use one of the buttons to interact with the bot.")
 
