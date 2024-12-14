@@ -310,27 +310,30 @@ def analyze():
             "status": "error"
         }), 500
 application = Application.builder().token(BOT_TOKEN).build()
-@app.route(f"/{BOT_TOKEN}", methods=["POST"])
-def telegram_webhook():
-    try:
-        # Log the raw request headers and body for debugging
-        logging.debug(f"Webhook received headers: {request.headers}")
-        logging.debug(f"Webhook received body: {request.data}")
+# @app.route(f"/{BOT_TOKEN}", methods=["POST"])
+# def telegram_webhook():
+#     try:
+#         # Log incoming request headers and body
+#         logging.debug(f"Webhook received headers: {request.headers}")
+#         logging.debug(f"Webhook received body: {request.data}")
 
-        # Parse the JSON update
-        update_data = request.get_json(force=True)
-        logging.debug(f"Webhook parsed update: {update_data}")
+#         # Parse the incoming update
+#         update_data = request.get_json(force=True)
+#         logging.debug(f"Webhook parsed update data: {update_data}")
 
-        # Process the update using the Telegram application
-        update = Update.de_json(update_data, application.bot)
-        application.process_update(update)
+#         # Convert the update data to a Telegram Update object
+#         update = Update.de_json(update_data, application.bot)
+#         logging.debug(f"Telegram Update object created: {update}")
 
-        # Respond to Telegram
-        return "OK", 200
-    except Exception as e:
-        # Log the error with full traceback
-        logging.error(f"Error processing webhook update: {e}", exc_info=True)
-        return jsonify({"error": "Internal Server Error"}), 500
+#         # Process the update using the bot's handlers
+#         application.process_update(update)
+#         logging.debug("Update processed successfully by Telegram bot")
+
+#         return "OK", 200
+#     except Exception as e:
+#         # Log the error with traceback
+#         logging.error(f"Error processing webhook update: {e}", exc_info=True)
+#         return jsonify({"error": "Internal Server Error"}), 500
 
 
 def run_flask():
