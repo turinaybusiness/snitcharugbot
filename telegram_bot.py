@@ -48,6 +48,18 @@ def save_mint_address(address: str):
         conn.rollback()
         print(f"Error saving address: {e}")
 
+def fetch_risk_analysis(token_address: str):
+    api_url = f"https://snitcharugbot-1.onrender.com/analyze?token={token_address}"
+    try:
+        response = requests.get(api_url, headers={"Content-Type": "application/json"})
+        response.raise_for_status()
+        data = response.json()
+        if data["status"] == "success":
+            return data["data"]["risk_level"], data["data"]["risk_score"], data["data"]["risk_factors"]
+    except Exception as e:
+        print(f"Error fetching risk analysis: {e}")
+    return None, None, None
+
 # Function to get the sent_count for a mint address
 def get_address_count(address: str) -> int:
     cur.execute("SELECT sent_count FROM mint_addresses WHERE address = %s", (address,))
@@ -60,6 +72,7 @@ async def start(update: Update, context) -> None:
     keyboard = [
         [InlineKeyboardButton("Snitch CA", callback_data="report_ca")],
         [InlineKeyboardButton("Check CA", callback_data="check_ca")],
+        [InlineKeyboardButton("Rug Pull?", callback_data="rug_pull")],
         [InlineKeyboardButton("Current Training Process", callback_data="training_progress")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -89,6 +102,9 @@ async def button_handler(update: Update, context) -> None:
     elif query.data == "check_ca":
         await update.callback_query.message.reply_text("Enter Token CA to check:")
         context.user_data["awaiting_ca"] = "check"
+    elif query.data == "rug_pull":
+        await update.callback_query.message.reply_text("Enter Token CA to analyze:")
+        context.user_data["awaiting_ca"] = "rug_pull"
     elif query.data == "training_progress":
         await update.callback_query.message.reply_text("Training Process: 100% 🛠")
 
@@ -111,6 +127,19 @@ async def handle_ca_input(update: Update, context) -> None:
         else:
             await update.message.reply_text("Invalid Token Address.")
         context.user_data["awaiting_ca"] = None  # Clear the action
+    elif action == "rug_pull":
+        if validate_mint_address(mint_address):
+            risk_level, risk_score, risk_factors = fetch_risk_analysis(mint_address)
+            if risk_level and risk_score is not None:
+                await update.message.reply_text(
+                    f"Risk Level: {risk_level}\n"
+                    f"Risk Score: {risk_score:.2f}\n"
+                )
+            else:
+                await update.message.reply_text("Failed to fetch risk analysis. Please try again later.")
+        else:
+            await update.message.reply_text("Invalid Token Address.")
+        context.user_data["awaiting_ca"] = None
     else:
         await update.message.reply_text("Please use one of the buttons to interact with the bot.")
 
