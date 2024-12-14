@@ -13,6 +13,7 @@ from datetime import datetime
 import os
 from dotenv import load_dotenv
 from flask_cors import CORS
+from threading import Thread
 DATABASE_URL = os.getenv("DATABASE_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL")
@@ -122,7 +123,9 @@ async def handle_ca_input(update: Update, context) -> None:
         context.user_data["awaiting_ca"] = None  # Clear the action
     else:
         await update.message.reply_text("Please use one of the buttons to interact with the bot.")
-
+def run_flask():
+    port = int(os.getenv('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
 # Main function
 def main():
     application = Application.builder().token(BOT_TOKEN).build()
@@ -131,7 +134,8 @@ def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(button_handler))  # For button clicks
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ca_input))  # For text input
-
+    flask_thread = Thread(target=run_flask)
+    flask_thread.start()
     # Webhook setup
     application.run_webhook(
         listen="0.0.0.0",
@@ -336,5 +340,3 @@ def telegram_webhook():
 
 if __name__ == '__main__':
     main()
-    port = int(os.getenv('PORT', 5000))  # Render provides the PORT env variable
-    app.run(host='0.0.0.0', port=port)
