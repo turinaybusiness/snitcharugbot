@@ -139,12 +139,8 @@ def main():
         url_path=BOT_TOKEN,
         webhook_url=f"{RENDER_EXTERNAL_URL}/{BOT_TOKEN}"
     )
-    port = int(os.getenv('PORT', 5001))
-    if os.getenv('ENVIRONMENT') == 'development':
-        app.run(host='0.0.0.0', port=port, debug=True)
-    else:
-        # In production, we'll use gunicorn instead of waitress
-        app.run(host='0.0.0.0', port=port)
+    port = int(os.getenv('PORT', 5000))  # Render provides the PORT env variable
+    app.run(host='0.0.0.0', port=port)
 
 
 # Load environment variables
