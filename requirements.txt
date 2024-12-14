@@ -6,3 +6,4 @@ flask_limiter
 requests
 python-dotenv
 gunicorn
+supervisor
