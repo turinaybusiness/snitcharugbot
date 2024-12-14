@@ -326,6 +326,7 @@ def analyze():
             "error": str(e),
             "status": "error"
         }), 500
+application = Application.builder().token(BOT_TOKEN).build()
 @app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def telegram_webhook():
     try:
