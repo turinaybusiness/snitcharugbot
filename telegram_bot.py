@@ -124,11 +124,13 @@ def main():
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ca_input))  # For text input
 
     # Webhook setup
+    telegram_port = int(os.getenv("TELEGRAM_PORT", 8443))  # Default to 8443
+
     application.run_webhook(
         listen="0.0.0.0",
-        port=int(os.environ.get("PORT", 8443)),
+        port=telegram_port,
         url_path=BOT_TOKEN,
-        webhook_url=f"{RENDER_EXTERNAL_URL}/{BOT_TOKEN}"
+        webhook_url=f"{RENDER_EXTERNAL_URL}/{BOT_TOKEN}",
     )
 
 if __name__ == '__main__':
