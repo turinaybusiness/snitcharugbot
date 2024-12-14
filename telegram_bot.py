@@ -119,6 +119,11 @@ async def handle_ca_input(update: Update, context) -> None:
     mint_address = update.message.text.strip()
     action = context.user_data.get("awaiting_ca")
 
+    # Validate if the action was properly set
+    if not action:
+        await update.message.reply_text("❌ Please use one of the buttons to interact with the bot.")
+        return
+
     if action == "report":
         if validate_mint_address(mint_address):
             save_mint_address(mint_address)
@@ -133,7 +138,7 @@ async def handle_ca_input(update: Update, context) -> None:
         else:
             await update.message.reply_text("Invalid Token Address.")
         context.user_data["awaiting_ca"] = None  # Clear the action
-    if action == "rug_pull":
+    elif action == "rug_pull":
         if validate_mint_address(mint_address):
             risk_level, risk_score, risk_factors = fetch_risk_analysis(mint_address)
             if risk_level and risk_score is not None:
@@ -148,7 +153,7 @@ async def handle_ca_input(update: Update, context) -> None:
             await update.message.reply_text("❌ Invalid Token Address. Please try again.")
         context.user_data["awaiting_ca"] = None  # Clear the action
     else:
-        await update.message.reply_text("Please use one of the buttons to interact with the bot.")
+        await update.message.reply_text("❌ Please use one of the buttons to interact with the bot.")
 
 # Main function
 def main():
