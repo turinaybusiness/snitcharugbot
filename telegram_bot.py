@@ -124,25 +124,35 @@ async def handle_ca_input(update: Update, context) -> None:
     else:
         await update.message.reply_text("Please use one of the buttons to interact with the bot.")
 def run_flask():
-    port = int(os.getenv('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
-# Main function
-def main():
-    application = Application.builder().token(BOT_TOKEN).build()
+    # Run Flask app
+    port = int(os.getenv("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
 
-    # Add handlers
+def run_telegram_bot():
+    # Initialize and run the Telegram bot webhook
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(CallbackQueryHandler(button_handler))  # For button clicks
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ca_input))  # For text input
-    flask_thread = Thread(target=run_flask)
-    flask_thread.start()
-    # Webhook setup
+    application.add_handler(CallbackQueryHandler(button_handler))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ca_input))
+
     application.run_webhook(
         listen="0.0.0.0",
-        port=int(os.environ.get("PORT", 8443)),
+        port=int(os.getenv("TELEGRAM_PORT", 8443)),  # Default to 8443
         url_path=BOT_TOKEN,
-        webhook_url=f"{RENDER_EXTERNAL_URL}/{BOT_TOKEN}"
+        webhook_url=f"{RENDER_EXTERNAL_URL}/{BOT_TOKEN}",
     )
+
+def main():
+    # Run Flask and Telegram bot in separate threads
+    flask_thread = Thread(target=run_flask)
+    flask_thread.start()
+
+    telegram_thread = Thread(target=run_telegram_bot)
+    telegram_thread.start()
+
+    # Wait for both threads to finish
+    flask_thread.join()
+    telegram_thread.join()
+# Main function
 
 
 
@@ -331,13 +341,14 @@ application = Application.builder().token(BOT_TOKEN).build()
 def telegram_webhook():
     try:
         update = request.get_json(force=True)
-        logging.debug(f"Received update: {update}")
+        logging.debug(f"Webhook received update: {update}")
         update = Update.de_json(update, application.bot)
         application.process_update(update)
+
         return "OK", 200
     except Exception as e:
-        logging.error(f"Error processing update: {e}")
-        return "Internal Server Error", 500
+        logging.error(f"Error processing webhook update: {e}")
+        return jsonify({"error": "Internal Server Error"}), 500
 
 if __name__ == '__main__':
     main()
