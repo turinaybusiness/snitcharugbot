@@ -3,17 +3,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 import os
 from psycopg2 import connect
 import time
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-import requests
-import logging
-from datetime import datetime
-import os
-from dotenv import load_dotenv
-from flask_cors import CORS
-from threading import Thread
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL")
@@ -67,7 +57,6 @@ def get_address_count(address: str) -> int:
 # Start command handler
 async def start(update: Update, context) -> None:
     # Create buttons
-    logging.debug("Processing /start command")
     keyboard = [
         [InlineKeyboardButton("Snitch CA", callback_data="report_ca")],
         [InlineKeyboardButton("Check CA", callback_data="check_ca")],
@@ -126,246 +115,21 @@ async def handle_ca_input(update: Update, context) -> None:
         await update.message.reply_text("Please use one of the buttons to interact with the bot.")
 
 # Main function
+def main():
+    application = Application.builder().token(BOT_TOKEN).build()
 
-
-
-# Load environment variables
-load_dotenv()
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-
-app = Flask(__name__)
-CORS(app)
-# Initialize API key from environment variable
-API_KEY = os.getenv('HELIUS_API_KEY', '4b72d62d-6176-4939-918b-b486fe647122')
-if not API_KEY:
-    raise ValueError("HELIUS_API_KEY environment variable is not set")
-
-class RugPullDetector:
-    def __init__(self, api_key):
-        self.API_KEY = api_key
-        self.RPC_URL = f"https://mainnet.helius-rpc.com/?api-key={self.API_KEY}"
-        self.session = requests.Session()
-
-    def get_token_metadata(self, token_address: str):
-        payload = {
-            "jsonrpc": "2.0",
-            "id": "my-id",
-            "method": "getAsset",
-            "params": [token_address]
-        }
-
-        headers = {
-            "Content-Type": "application/json"
-        }
-
-        try:
-            response = self.session.post(self.RPC_URL, json=payload, headers=headers)
-            response.raise_for_status()
-            data = response.json()
-            
-            if "result" in data:
-                return data["result"]
-            return None
-            
-        except requests.exceptions.RequestException as e:
-            logging.error(f"Error fetching token metadata: {str(e)}")
-            return None
-
-    def get_token_supply(self, token_address: str):
-        payload = {
-            "jsonrpc": "2.0",
-            "id": "my-id",
-            "method": "getTokenSupply",
-            "params": [token_address]
-        }
-
-        headers = {
-            "Content-Type": "application/json"
-        }
-
-        try:
-            response = self.session.post(self.RPC_URL, json=payload, headers=headers)
-            response.raise_for_status()
-            data = response.json()
-            
-            if "result" in data and "value" in data["result"]:
-                return data["result"]["value"]
-            return None
-            
-        except requests.exceptions.RequestException as e:
-            logging.error(f"Error fetching token supply: {str(e)}")
-            return None
-
-    def calculate_risk_score(self, token_data, supply_data):
-        risk_score = 0.0
-        risk_factors = []
-        
-        if not token_data:
-            return 1.0, ["No token metadata available"]
-        
-        if not token_data.get("name"):
-            risk_score += 0.2
-            risk_factors.append("Missing token name")
-            
-        if not token_data.get("symbol"):
-            risk_score += 0.1
-            risk_factors.append("Missing token symbol")
-
-        if supply_data:
-            try:
-                supply = float(supply_data.get("uiAmount", 0))
-                if supply == 0:
-                    risk_score += 0.3
-                    risk_factors.append("Zero supply")
-                elif supply > 1000000000000:
-                    risk_score += 0.2
-                    risk_factors.append("Extremely high supply")
-            except:
-                risk_score += 0.2
-                risk_factors.append("Invalid supply data")
-
-        decimals = supply_data.get("decimals") if supply_data else None
-        if decimals is None or decimals == 0:
-            risk_score += 0.2
-            risk_factors.append("Invalid decimals")
-
-        if token_data.get("frozen"):
-            risk_score += 0.3
-            risk_factors.append("Token is frozen")
-
-        return min(risk_score, 1.0), risk_factors
-
-    def analyze_token(self, token_address: str):
-        token_data = self.get_token_metadata(token_address)
-        supply_data = self.get_token_supply(token_address)
-        
-        if not token_data and not supply_data:
-            return {
-                "error": "Unable to fetch token data",
-                "status": "error"
-            }
-        
-        risk_score, risk_factors = self.calculate_risk_score(token_data, supply_data)
-        
-        return {
-            "status": "success",
-            "data": {
-                "token_address": token_address,
-                "name": token_data.get("name", "Unknown") if token_data else "Unknown",
-                "symbol": token_data.get("symbol", "Unknown") if token_data else "Unknown",
-                "supply": supply_data.get("uiAmount", 0) if supply_data else 0,
-                "decimals": supply_data.get("decimals", 0) if supply_data else 0,
-                "risk_score": risk_score,
-                "risk_factors": risk_factors,
-                "risk_level": "HIGH" if risk_score > 0.7 else "MEDIUM" if risk_score > 0.4 else "LOW",
-                "timestamp": datetime.now().isoformat()
-            }
-        }
-
-# Create detector instance
-detector = RugPullDetector(API_KEY)
-
-@app.route('/', methods=['GET'])
-def home():
-    return jsonify({
-        "status": "ok",
-        "message": "Rug Pull Detector API",
-        "version": "1.0.0",
-        "endpoints": {
-            "health_check": "/health",
-            "analyze_token": "/analyze?token=TOKEN_ADDRESS"
-        }
-    })
-
-@app.route('/health', methods=['GET'])
-def health_check():
-    return jsonify({
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
-        "environment": os.getenv('ENVIRONMENT', 'production')
-    })
-
-@app.route('/analyze', methods=['GET'])
-def analyze():
-    token_address = request.args.get('token')
-    
-    if not token_address:
-        return jsonify({
-            "error": "Token address is required",
-            "status": "error"
-        }), 400
-    
-    try:
-        result = detector.analyze_token(token_address)
-        return jsonify(result)
-    except Exception as e:
-        logging.error(f"Error analyzing token: {str(e)}")
-        return jsonify({
-            "error": str(e),
-            "status": "error"
-        }), 500
-application = Application.builder().token(BOT_TOKEN).build()
-@app.route(f"/{BOT_TOKEN}", methods=["POST"])
-def telegram_webhook():
-    try:
-        # Log incoming request headers and body
-        logging.debug(f"Webhook received headers: {request.headers}")
-        logging.debug(f"Webhook received body: {request.data}")
-
-        # Parse the incoming update
-        update_data = request.get_json(force=True)
-        logging.debug(f"Webhook parsed update data: {update_data}")
-
-        # Convert the update data to a Telegram Update object
-        update = Update.de_json(update_data, application.bot)
-        logging.debug(f"Telegram Update object created: {update}")
-
-        # Process the update using the bot's handlers
-        application.process_update(update)
-        logging.debug("Update processed successfully by Telegram bot")
-
-        return "OK", 200
-    except Exception as e:
-        # Log the error with traceback
-        logging.error(f"Error processing webhook update: {e}", exc_info=True)
-        return jsonify({"error": "Internal Server Error"}), 500
-
-
-def run_flask():
-    # Run Flask app
-    port = int(os.getenv("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
-
-def run_telegram_bot():
-    # Initialize and run the Telegram bot webhook
+    # Add handlers
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(CallbackQueryHandler(button_handler))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ca_input))
+    application.add_handler(CallbackQueryHandler(button_handler))  # For button clicks
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ca_input))  # For text input
 
+    # Webhook setup
     application.run_webhook(
         listen="0.0.0.0",
-        port=int(os.getenv("TELEGRAM_PORT", 8443)),  # Default to 8443
+        port=int(os.environ.get("PORT", 8443)),
         url_path=BOT_TOKEN,
-        webhook_url=f"{RENDER_EXTERNAL_URL}/{BOT_TOKEN}",
+        webhook_url=f"{RENDER_EXTERNAL_URL}/{BOT_TOKEN}"
     )
-
-def main():
-    # Run Flask and Telegram bot in separate threads
-    # flask_thread = Thread(target=run_flask)
-    # flask_thread.start()
-
-    # telegram_thread = Thread(target=run_telegram_bot)
-    # telegram_thread.start()
-
-    # # Wait for both threads to finish
-    # flask_thread.join()
-    # telegram_thread.join()
-    run_telegram_bot()
 
 if __name__ == '__main__':
     main()
