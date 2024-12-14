@@ -1,2 +1,7 @@
 python-telegram-bot[webhooks]==20.3
 psycopg2-binary
+flask
+flask_cors
+flask_limiter
+requests
+python-dotenv
