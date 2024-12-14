@@ -195,6 +195,6 @@ if __name__ == '__main__':
     if os.getenv('ENVIRONMENT') == 'development':
         app.run(host='0.0.0.0', port=port, debug=True)
     else:
-        # In production, we'll use gunicorn instead of waitress
-        app.run(host='0.0.0.0', port=port)
-
+        # Gunicorn or another WSGI server should be used in production.
+        # This part should not invoke app.run() directly.
+        print("Run this app with a WSGI server like gunicorn.")
