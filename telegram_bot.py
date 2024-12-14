@@ -109,8 +109,8 @@ async def button_handler(update: Update, context) -> None:
         await update.callback_query.message.reply_text("Enter Token CA to check:")
         context.user_data["awaiting_ca"] = "check"
     elif query.data == "rug_pull":
-        await update.callback_query.message.reply_text("Enter Token CA to analyze:")
-        context.user_data["awaiting_ca"] = "rug_pull"
+        await query.message.reply_text("Enter Token CA to analyze:")
+        context.user_data["awaiting_ca"] = "rug_pull"  # Store "rug_pull" acti
     elif query.data == "training_progress":
         await update.callback_query.message.reply_text("Training Process: 100% 🛠")
 
