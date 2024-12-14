@@ -139,8 +139,7 @@ def main():
         url_path=BOT_TOKEN,
         webhook_url=f"{RENDER_EXTERNAL_URL}/{BOT_TOKEN}"
     )
-    port = int(os.getenv('PORT', 5000))  # Render provides the PORT env variable
-    app.run(host='0.0.0.0', port=port)
+
 
 
 # Load environment variables
@@ -323,6 +322,12 @@ def analyze():
             "error": str(e),
             "status": "error"
         }), 500
-
+@app.route(f"/{BOT_TOKEN}", methods=["POST"])
+def telegram_webhook():
+    update = Update.de_json(request.get_json(force=True), context.bot)
+    application.dispatcher.process_update(update)
+    return "OK", 200
 if __name__ == '__main__':
     main()
+    port = int(os.getenv('PORT', 5000))  # Render provides the PORT env variable
+    app.run(host='0.0.0.0', port=port)
