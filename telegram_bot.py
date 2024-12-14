@@ -122,11 +122,11 @@ def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(button_handler))  # For button clicks
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_ca_input))  # For text input
-    telegram_port = int(os.getenv("TELEGRAM_PORT", 8443))  # Default to 8443
+
     # Webhook setup
     application.run_webhook(
         listen="0.0.0.0",
-        port=telegram_port,
+        port=int(os.environ.get("PORT", 8443)),
         url_path=BOT_TOKEN,
         webhook_url=f"{RENDER_EXTERNAL_URL}/{BOT_TOKEN}"
     )
